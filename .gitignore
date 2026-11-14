@@ -1,0 +1,28 @@
+# Variables de entorno y secretos
+.env
+.env.*
+!.env.example
+
+# Java y Maven
+**/target/
+*.class
+*.jar
+*.war
+
+# Node y frontend
+**/node_modules/
+**/dist/
+**/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
