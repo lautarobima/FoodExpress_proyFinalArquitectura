@@ -3,6 +3,7 @@ package com.foodexpress.restaurantes_menu.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class CategoriaService {
     }
 
     // Crear una categoría para un restaurante
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public CategoriaResponseDTO crear(
             Long restauranteId,
             CategoriaRequestDTO dto) {
@@ -73,6 +75,7 @@ public class CategoriaService {
     }
 
     // Actualizar una categoría
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
 public CategoriaResponseDTO actualizar(
         Long restauranteId,
         Long id,
@@ -105,6 +108,7 @@ public CategoriaResponseDTO actualizar(
 }
 
     // Desactivar una categoría
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
 public void desactivar(Long restauranteId, Long id) {
 
     Categoria categoria = categoriaRepository.findById(id)

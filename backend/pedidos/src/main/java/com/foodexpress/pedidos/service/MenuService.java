@@ -5,22 +5,22 @@ import com.foodexpress.pedidos.dto.menu.MenuCategoriaDTO;
 import com.foodexpress.pedidos.dto.menu.MenuExtraDTO;
 import com.foodexpress.pedidos.dto.menu.MenuPlatoDTO;
 import com.foodexpress.pedidos.dto.menu.MenuResponseDTO;
-import com.foodexpress.pedidos.service.client.MenuClient;
+import com.foodexpress.pedidos.service.port.MenuPort;
 
 import org.springframework.stereotype.Service;
 
 @Service
 public class MenuService {
 
-    private final MenuClient menuClient;
+    private final MenuPort menuPort;
 
-    public MenuService(MenuClient menuClient) {
-        this.menuClient = menuClient;
+    public MenuService(MenuPort menuPort) {
+        this.menuPort = menuPort;
     }
 
     // Consultar el menú completo de un restaurante
     public MenuResponseDTO consultarMenu(Long restauranteId) {
-        return menuClient.obtenerMenu(restauranteId);
+        return menuPort.obtenerMenu(restauranteId);
     }
 
     // Buscar un plato dentro del menú

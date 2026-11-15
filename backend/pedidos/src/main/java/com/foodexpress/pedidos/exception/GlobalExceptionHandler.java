@@ -24,6 +24,32 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    // Transición de estado no permitida
+    @ExceptionHandler(TransicionEstadoInvalidaException.class)
+    public ResponseEntity<ApiErrorDTO> manejarTransicionInvalida(
+            TransicionEstadoInvalidaException ex) {
+
+        ApiErrorDTO error = new ApiErrorDTO(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    // Regla de negocio incumplida (restaurante cerrado, inexistente, etc.)
+    @ExceptionHandler(ReglaNegocioException.class)
+    public ResponseEntity<ApiErrorDTO> manejarReglaNegocio(
+            ReglaNegocioException ex) {
+
+        ApiErrorDTO error = new ApiErrorDTO(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                ex.getMessage()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
+    }
+
     // Datos inválidos o reglas de negocio incumplidas
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiErrorDTO> manejarDatosInvalidos(

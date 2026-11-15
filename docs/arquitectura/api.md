@@ -19,6 +19,7 @@ Este microservicio administra la información de los restaurantes, sus horarios 
 | GET | `/api/restaurantes/{id}` | Consultar un restaurante por su ID. | 200 OK |
 | PUT | `/api/restaurantes/{id}` | Actualizar la información de un restaurante. | 200 OK |
 | PATCH | `/api/restaurantes/{id}/desactivar` | Desactivar un restaurante. | 204 No Content |
+| PATCH | `/api/restaurantes/{id}/estado-operativo?estado=ABIERTO` | Abrir o cerrar el restaurante (`ABIERTO` / `CERRADO`). Solo los abiertos reciben pedidos. | 200 OK |
 
 **Consideraciones:**
 - Los endpoints de creación y actualización reciben un objeto `RestauranteRequestDTO`.
@@ -245,26 +246,74 @@ Ejemplo de respuesta:
 
 Ejemplo: devuelve la estructura de respuesta presentada en el endpoint de creación, con la información almacenada del pedido.
 
-### 2.3 Operaciones de estado y cancelación
-
-Estas operaciones se incluyen como referencia para la integración del equipo. Su implementación corresponde al integrante encargado del patrón State y las transiciones de estado.
+### 2.3 Listar pedidos
 
 | Método | Endpoint | Descripción |
 |---|---|---|
-| PATCH | `/api/pedidos/{id}/estado` | Cambiar el estado del pedido según las transiciones permitidas. |
-| POST | `/api/pedidos/{id}/cancelar` | Solicitar la cancelación de un pedido. |
+| GET | `/api/pedidos?clienteId={id}` | Historial de pedidos del cliente (más recientes primero). |
+| GET | `/api/pedidos?restauranteId={id}` | Pedidos del restaurante (más antiguos primero). |
+| GET | `/api/pedidos?restauranteId={id}&estado=RECIBIDO` | Pedidos del restaurante en un estado (panel de cocina). |
 
-Los cuerpos de estas solicitudes y las reglas definitivas deberán acordarse con el responsable del patrón State.
+### 2.4 Cambio de estado y cancelación (patrón State)
 
-### 2.4 Códigos de respuesta esperados
+| Método | Endpoint | Descripción | Respuesta |
+|---|---|---|---|
+| PATCH | `/api/pedidos/{id}/estado` | Avanza al siguiente estado permitido. Sin cuerpo. | 200 OK |
+| POST | `/api/pedidos/{id}/cancelar` | Cancela el pedido. | 200 OK |
+
+**Transiciones válidas:**
+
+```
+RECIBIDO ──► EN_PREPARACION ──► LISTO ──► ENTREGADO
+   │               │
+   └───────────────┴──► CANCELADO
+```
+
+- `LISTO`, `ENTREGADO` y `CANCELADO` no se pueden cancelar.
+- `ENTREGADO` y `CANCELADO` son estados finales.
+- Una transición no permitida responde `409 Conflict`.
+
+**Cuerpo de cancelación:**
+
+```json
+{
+  "canceladoPor": "CLIENTE",
+  "motivo": "Me equivoqué de dirección"
+}
+```
+
+`canceladoPor` es obligatorio (`CLIENTE` o `RESTAURANTE`) y define a quién se notifica.
+
+### 2.5 Reglas al crear un pedido
+
+- El restaurante debe estar activo y con `estadoOperativo = ABIERTO` (si no: `422`).
+- Solo se aceptan platos y extras disponibles en el menú.
+- Impuesto configurable en `pedidos.impuesto.tasa` (por defecto 8 %).
+- Al guardar el pedido se publica el evento `pedido.creado` en RabbitMQ.
+
+### 2.6 Códigos de respuesta
 
 | Código HTTP | Significado |
 |---|---|
-| 200 OK | Consulta realizada correctamente. |
+| 200 OK | Consulta o cambio de estado realizado. |
 | 201 Created | Pedido creado correctamente. |
-| 400 Bad Request | Datos inválidos, campos obligatorios faltantes, cantidades incorrectas o incumplimiento de validaciones del pedido. |
-| 404 Not Found | Pedido solicitado no encontrado. |
-| 502 Bad Gateway | Error al comunicarse con el microservicio externo Restaurantes y Menú. |
-| 500 Internal Server Error | Error interno no controlado del servidor. |
+| 400 Bad Request | Datos inválidos o campos obligatorios faltantes. |
+| 404 Not Found | Pedido no encontrado. |
+| 409 Conflict | Transición de estado no permitida. |
+| 422 Unprocessable Entity | Restaurante inexistente, desactivado o cerrado. |
+| 502 Bad Gateway | No fue posible comunicarse con Restaurantes y Menú. |
 
-*Nota:* Estos códigos representan el comportamiento esperado del contrato. Se confirmarán durante la implementación y las pruebas.
+## 3. Microservicio Notificaciones
+
+**Puerto local:** `8083`
+
+No recibe peticiones para enviar notificaciones: las genera a partir de los eventos de RabbitMQ (ver `mensajeria.md`).
+
+| Método | Endpoint | Descripción |
+|---|---|---|
+| GET | `/api/notificaciones?pedidoId={id}` | Notificaciones de un pedido. |
+| GET | `/api/notificaciones?clienteId={id}` | Notificaciones de un cliente. |
+| GET | `/api/notificaciones?restauranteId={id}` | Notificaciones de un restaurante. |
+| WS | `/ws` (STOMP) | Tiempo real. Tópicos: `/topic/clientes/{id}` y `/topic/restaurantes/{id}`. |
+
+Página de prueba del WebSocket: `http://localhost:8083/panel.html`.

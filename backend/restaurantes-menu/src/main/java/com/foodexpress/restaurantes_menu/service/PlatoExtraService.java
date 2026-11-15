@@ -2,6 +2,7 @@ package com.foodexpress.restaurantes_menu.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +36,7 @@ public class PlatoExtraService {
 
     // Asociar un extra a un plato
     @Transactional
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoExtraResponseDTO agregarExtra(Long platoId, Long extraId) {
 
         Plato plato = platoRepository.findById(platoId)
@@ -106,6 +108,7 @@ public class PlatoExtraService {
 
     // Quitar un extra de un plato
     @Transactional
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public void quitarExtra(Long platoId, Long extraId) {
 
         PlatoExtraId id = new PlatoExtraId(platoId, extraId);

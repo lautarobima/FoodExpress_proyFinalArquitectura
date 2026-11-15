@@ -3,6 +3,7 @@ package com.foodexpress.restaurantes_menu.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +26,7 @@ import com.foodexpress.restaurantes_menu.repository.RestauranteRepository;
 
 @Service
 @Transactional(readOnly = true)
-public class MenuService {
+public class MenuService implements MenuQueryService {
 
     private final RestauranteRepository restauranteRepository;
     private final CategoriaRepository categoriaRepository;
@@ -44,7 +45,11 @@ public class MenuService {
         this.platoExtraRepository = platoExtraRepository;
     }
 
-    // Consultar el menú completo de un restaurante
+    // Consultar el menú completo de un restaurante.
+    // Se guarda en caché: la consulta del menú es la operación más frecuente
+    // (horas pico). Se invalida cuando cambia algo del menú (@CacheEvict).
+    @Override
+    @Cacheable(value = CACHE_MENU, key = "#restauranteId")
     public MenuResponseDTO consultarMenuCompleto(Long restauranteId) {
 
         Restaurante restaurante = restauranteRepository.findById(restauranteId)

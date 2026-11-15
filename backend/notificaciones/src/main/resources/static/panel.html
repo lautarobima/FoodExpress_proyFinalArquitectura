@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>FoodExpress · Notificaciones en tiempo real</title>
+<script src="https://cdn.jsdelivr.net/npm/@stomp/stompjs@7/bundles/stomp.umd.min.js"></script>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+  .barra { display: flex; gap: .5rem; align-items: center; margin-bottom: 1rem; }
+  select, input, button { font: inherit; padding: .35rem .6rem; }
+  #estado { font-size: .9rem; color: #666; }
+  .msg { border: 1px solid #ddd; border-radius: 6px; padding: .6rem .8rem; margin-bottom: .5rem; }
+  .msg b { display: block; }
+  .msg small { color: #888; }
+</style>
+</head>
+<body>
+<h2>Notificaciones en tiempo real</h2>
+<div class="barra">
+  <select id="tipo">
+    <option value="clientes">Cliente</option>
+    <option value="restaurantes">Restaurante (panel de cocina)</option>
+  </select>
+  <input id="id" type="number" value="1" min="1" style="width:5rem">
+  <button id="conectar">Conectar</button>
+  <span id="estado">Desconectado</span>
+</div>
+<div id="lista"></div>
+
+<script>
+  let cliente = null;
+
+  document.getElementById('conectar').onclick = () => {
+    if (cliente) cliente.deactivate();
+
+    const destino = '/topic/' + document.getElementById('tipo').value
+                  + '/' + document.getElementById('id').value;
+
+    cliente = new StompJs.Client({
+      brokerURL: 'ws://' + location.host + '/ws',
+      reconnectDelay: 3000,
+      onConnect: () => {
+        document.getElementById('estado').textContent = 'Escuchando ' + destino;
+        cliente.subscribe(destino, (frame) => {
+          const m = JSON.parse(frame.body);
+          const div = document.createElement('div');
+          div.className = 'msg';
+          div.innerHTML = '<b></b><span></span><br><small></small>';
+          div.querySelector('b').textContent = m.titulo;
+          div.querySelector('span').textContent = m.cuerpo;
+          div.querySelector('small').textContent =
+              m.tipoEvento + ' · ' + new Date().toLocaleTimeString();
+          document.getElementById('lista').prepend(div);
+        });
+      },
+      onWebSocketClose: () => {
+        document.getElementById('estado').textContent = 'Desconectado';
+      }
+    });
+    cliente.activate();
+  };
+</script>
+</body>
+</html>

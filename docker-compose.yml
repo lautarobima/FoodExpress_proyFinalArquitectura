@@ -1,0 +1,26 @@
+# Infraestructura local de FoodExpress
+# Uso: docker compose up -d
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: foodexpress-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Crea las 3 bases de datos la primera vez que arranca
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: foodexpress-rabbitmq
+    ports:
+      - "5672:5672"     # AMQP (los microservicios)
+      - "15672:15672"   # Panel web: http://localhost:15672 (guest/guest)
+
+volumes:
+  postgres-data:

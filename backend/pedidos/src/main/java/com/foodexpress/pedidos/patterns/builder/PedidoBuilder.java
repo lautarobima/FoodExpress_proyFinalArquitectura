@@ -42,7 +42,8 @@ public class PedidoBuilder {
             String nombrePlato,
             BigDecimal precioUnitario,
             Integer cantidad,
-            String notas) {
+            String notas,
+            BigDecimal subtotal) {
 
         ItemPedido item = new ItemPedido();
 
@@ -52,7 +53,7 @@ public class PedidoBuilder {
         item.setPrecioUnitario(precioUnitario);
         item.setCantidad(cantidad);
         item.setNotas(notas);
-        item.setSubtotal(BigDecimal.ZERO);
+        item.setSubtotal(subtotal);
         item.setExtras(new ArrayList<>());
 
         pedido.getItems().add(item);

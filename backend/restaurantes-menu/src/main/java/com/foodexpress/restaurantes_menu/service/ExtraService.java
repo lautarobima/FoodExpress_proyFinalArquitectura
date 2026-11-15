@@ -3,6 +3,7 @@ package com.foodexpress.restaurantes_menu.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class ExtraService {
     }
 
     // Registrar un extra
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public ExtraResponseDTO crear(
             Long restauranteId,
             ExtraRequestDTO dto) {
@@ -99,6 +101,7 @@ public ExtraResponseDTO buscarPorId(Long restauranteId, Long id) {
 }
 
     // Actualizar un extra
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
 public ExtraResponseDTO actualizar(
         Long restauranteId,
         Long id,
@@ -132,6 +135,7 @@ public ExtraResponseDTO actualizar(
 }
 
     // Cambiar disponibilidad
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
 public ExtraResponseDTO cambiarDisponibilidad(
         Long restauranteId,
         Long id,

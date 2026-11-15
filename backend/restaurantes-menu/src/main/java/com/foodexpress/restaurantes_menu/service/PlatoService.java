@@ -3,6 +3,7 @@ package com.foodexpress.restaurantes_menu.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ public class PlatoService {
     }
 
     // Registrar un plato
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoResponseDTO crear(PlatoRequestDTO dto) {
 
         Categoria categoria = obtenerCategoriaValida(dto.getCategoriaId());
@@ -81,6 +83,7 @@ public class PlatoService {
     }
 
     // Actualizar un plato
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoResponseDTO actualizar(
             Long id,
             PlatoRequestDTO dto) {
@@ -108,6 +111,7 @@ public class PlatoService {
     }
 
     // Cambiar la disponibilidad de un plato
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoResponseDTO cambiarDisponibilidad(
             Long id,
             Boolean disponible) {

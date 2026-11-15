@@ -17,6 +17,8 @@ public class PedidoResponseDTO {
     private BigDecimal subtotal;
     private BigDecimal impuestos;
     private BigDecimal total;
+    private String motivoCancelacion;
+    private LocalDateTime fechaActualizacion;
 
     public PedidoResponseDTO() {}
 
@@ -46,4 +48,20 @@ public class PedidoResponseDTO {
 
     public BigDecimal getTotal() { return total; }
     public void setTotal(BigDecimal total) { this.total = total; }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
+    }
 }

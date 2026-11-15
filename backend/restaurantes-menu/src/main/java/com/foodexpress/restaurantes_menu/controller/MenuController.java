@@ -7,15 +7,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.foodexpress.restaurantes_menu.dto.MenuResponseDTO;
-import com.foodexpress.restaurantes_menu.service.MenuService;
+import com.foodexpress.restaurantes_menu.service.MenuQueryService;
 
 @RestController
 @RequestMapping("/api/restaurantes/{restauranteId}/menu")
 public class MenuController {
 
-    private final MenuService menuService;
+    private final MenuQueryService menuService;
 
-    public MenuController(MenuService menuService) {
+    public MenuController(MenuQueryService menuService) {
         this.menuService = menuService;
     }
 

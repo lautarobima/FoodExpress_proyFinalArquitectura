@@ -1,0 +1,3 @@
+CREATE DATABASE foodexpress_restaurantes;
+CREATE DATABASE foodexpress_pedidos;
+CREATE DATABASE foodexpress_notificaciones;

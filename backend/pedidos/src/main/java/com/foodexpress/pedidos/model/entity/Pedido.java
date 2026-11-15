@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.foodexpress.pedidos.model.enums.EstadoPedido;
+import com.foodexpress.pedidos.patterns.state.EstadoPedidoState;
+import com.foodexpress.pedidos.patterns.state.EstadoPedidoStateFactory;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -54,7 +56,32 @@ public class Pedido {
     )
     private List<ItemPedido> items = new ArrayList<>();
 
+    @Column(name = "motivo_cancelacion", length = 300)
+    private String motivoCancelacion;
+
+    @Column(name = "fecha_actualizacion")
+    private LocalDateTime fechaActualizacion;
+
     public Pedido() {
+    }
+
+    // Lógica de estados delegada al patrón State
+
+    public void avanzarEstado() {
+        EstadoPedidoState siguiente = estadoActual().avanzar();
+        this.estado = siguiente.getEstado();
+        this.fechaActualizacion = LocalDateTime.now();
+    }
+
+    public void cancelar(String motivo) {
+        EstadoPedidoState siguiente = estadoActual().cancelar();
+        this.estado = siguiente.getEstado();
+        this.motivoCancelacion = motivo;
+        this.fechaActualizacion = LocalDateTime.now();
+    }
+
+    private EstadoPedidoState estadoActual() {
+        return EstadoPedidoStateFactory.desde(estado);
     }
 
     // Getters y setters
@@ -129,5 +156,21 @@ public class Pedido {
 
     public void setItems(List<ItemPedido> items) {
         this.items = items;
+    }
+
+    public String getMotivoCancelacion() {
+        return motivoCancelacion;
+    }
+
+    public void setMotivoCancelacion(String motivoCancelacion) {
+        this.motivoCancelacion = motivoCancelacion;
+    }
+
+    public LocalDateTime getFechaActualizacion() {
+        return fechaActualizacion;
+    }
+
+    public void setFechaActualizacion(LocalDateTime fechaActualizacion) {
+        this.fechaActualizacion = fechaActualizacion;
     }
 }

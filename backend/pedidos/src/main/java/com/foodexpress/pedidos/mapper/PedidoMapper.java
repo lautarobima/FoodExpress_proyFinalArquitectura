@@ -28,6 +28,8 @@ public class PedidoMapper {
         respuesta.setSubtotal(pedido.getSubtotal());
         respuesta.setImpuestos(pedido.getImpuestos());
         respuesta.setTotal(pedido.getTotal());
+        respuesta.setMotivoCancelacion(pedido.getMotivoCancelacion());
+        respuesta.setFechaActualizacion(pedido.getFechaActualizacion());
 
         respuesta.setItems(
                 pedido.getItems()

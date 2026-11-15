@@ -11,11 +11,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.foodexpress.restaurantes_menu.dto.RestauranteRequestDTO;
 import com.foodexpress.restaurantes_menu.dto.RestauranteResponseDTO;
+import com.foodexpress.restaurantes_menu.model.enums.EstadoOperativo;
 import com.foodexpress.restaurantes_menu.service.RestauranteService;
 
 import jakarta.validation.Valid;
@@ -58,6 +60,15 @@ public class RestauranteController {
             @Valid @RequestBody RestauranteRequestDTO dto
     ) {
         return restauranteService.actualizar(id, dto);
+    }
+
+    // Abrir o cerrar el restaurante: ?estado=ABIERTO | CERRADO
+    @PatchMapping("/{id}/estado-operativo")
+    public RestauranteResponseDTO cambiarEstadoOperativo(
+            @PathVariable Long id,
+            @RequestParam EstadoOperativo estado
+    ) {
+        return restauranteService.cambiarEstadoOperativo(id, estado);
     }
 
     // Desactivar un restaurante

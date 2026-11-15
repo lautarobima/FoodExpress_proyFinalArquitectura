@@ -3,6 +3,7 @@ package com.foodexpress.restaurantes_menu.service;
 
 import java.util.List;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +62,7 @@ public class RestauranteService {
     }
 
     // Actualizar información del restaurante
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public RestauranteResponseDTO actualizar(
             Long id,
             RestauranteRequestDTO dto) {
@@ -80,6 +82,7 @@ public class RestauranteService {
     }
 
     // Desactivar un restaurante
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public void desactivar(Long id) {
 
         Restaurante restaurante = restauranteRepository.findById(id)
@@ -89,6 +92,21 @@ public class RestauranteService {
         restaurante.setActivo(false);
 
         restauranteRepository.save(restaurante);
+    }
+
+    // Abrir o cerrar el restaurante (solo los abiertos reciben pedidos)
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
+    public RestauranteResponseDTO cambiarEstadoOperativo(
+            Long id,
+            EstadoOperativo estado) {
+
+        Restaurante restaurante = restauranteRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Restaurante no encontrado"));
+
+        restaurante.setEstadoOperativo(estado);
+
+        return convertirAResponse(restauranteRepository.save(restaurante));
     }
 
     // Convertir entidad a DTO de respuesta
