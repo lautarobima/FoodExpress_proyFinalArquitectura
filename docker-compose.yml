@@ -1,26 +1,149 @@
-# Infraestructura local de FoodExpress
-# Uso: docker compose up -d
+# FoodExpress: sistema completo
+# Uso: cp .env.example .env && docker compose up --build
+#
+# Puertos expuestos al host:
+#   8081  restaurantes-menu  (API, la consume el frontend)
+#   8082  pedidos            (API, la consume el frontend)
+#   8083  notificaciones     (API + WebSocket /ws para tiempo real)
+#   5432  postgres           (acceso desde DBeaver/IntelliJ en desarrollo)
+#   5672  rabbitmq AMQP      (correr un servicio desde el IDE contra el broker)
+#   15672 rabbitmq panel     (monitoreo de colas)
+
 services:
 
   postgres:
     image: postgres:16
     container_name: foodexpress-postgres
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_USER: ${DB_USER:?Falta DB_USER en .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       # Crea las 3 bases de datos la primera vez que arranca
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - datos
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:4-management
     container_name: foodexpress-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?Falta RABBITMQ_USER en .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Falta RABBITMQ_PASSWORD en .env}
     ports:
-      - "5672:5672"     # AMQP (los microservicios)
-      - "15672:15672"   # Panel web: http://localhost:15672 (guest/guest)
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - mensajeria
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  restaurantes-menu:
+    build: ./backend/restaurantes-menu
+    container_name: foodexpress-restaurantes-menu
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/foodexpress_restaurantes
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    ports:
+      - "8081:8081"
+    networks:
+      - datos
+      - mensajeria
+      - servicios
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8081/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  pedidos:
+    build: ./backend/pedidos
+    container_name: foodexpress-pedidos
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/foodexpress_pedidos
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      # restaurantes-menu.url en application.properties
+      RESTAURANTESMENU_URL: http://restaurantes-menu:8081
+      PEDIDOS_IMPUESTO_TASA: ${PEDIDOS_IMPUESTO_TASA:-0.08}
+    ports:
+      - "8082:8082"
+    networks:
+      - datos
+      - mensajeria
+      - servicios
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      # Pedidos valida cada orden contra el menú (llamada síncrona)
+      restaurantes-menu:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8082/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  notificaciones:
+    build: ./backend/notificaciones
+    container_name: foodexpress-notificaciones
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/foodexpress_notificaciones
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_USERNAME: ${RABBITMQ_USER}
+      SPRING_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+    ports:
+      - "8083:8083"
+    networks:
+      - datos
+      - mensajeria
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fs", "http://localhost:8083/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+networks:
+  datos:        # servicios <-> PostgreSQL
+  mensajeria:   # servicios <-> RabbitMQ
+  servicios:    # llamadas HTTP entre microservicios (pedidos -> restaurantes-menu)
 
 volumes:
   postgres-data:
+  rabbitmq-data:
