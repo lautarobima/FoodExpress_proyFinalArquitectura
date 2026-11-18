@@ -18,7 +18,7 @@ import com.foodexpress.restaurantes_menu.repository.PlatoRepository;
 
 @Service
 @Transactional
-public class PlatoService {
+public class PlatoService implements MenuAdminService {
 
     private final PlatoRepository platoRepository;
     private final CategoriaRepository categoriaRepository;
@@ -32,6 +32,7 @@ public class PlatoService {
     }
 
     // Registrar un plato
+    @Override
     @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoResponseDTO crear(PlatoRequestDTO dto) {
 
@@ -48,7 +49,8 @@ public class PlatoService {
         plato.setNombre(dto.getNombre());
         plato.setDescripcion(dto.getDescripcion());
         plato.setPrecio(dto.getPrecio());
-        plato.setDisponible(true);
+        plato.setDisponible(dto.getStock() == null || dto.getStock() > 0);
+        plato.setStock(dto.getStock());
 
         Plato guardado = platoRepository.save(plato);
 
@@ -83,6 +85,7 @@ public class PlatoService {
     }
 
     // Actualizar un plato
+    @Override
     @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoResponseDTO actualizar(
             Long id,
@@ -104,6 +107,11 @@ public class PlatoService {
         plato.setNombre(dto.getNombre());
         plato.setDescripcion(dto.getDescripcion());
         plato.setPrecio(dto.getPrecio());
+        plato.setStock(dto.getStock());
+
+        if (dto.getStock() != null) {
+            plato.setDisponible(dto.getStock() > 0);
+        }
 
         Plato actualizado = platoRepository.save(plato);
 
@@ -111,6 +119,7 @@ public class PlatoService {
     }
 
     // Cambiar la disponibilidad de un plato
+    @Override
     @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
     public PlatoResponseDTO cambiarDisponibilidad(
             Long id,
@@ -165,7 +174,20 @@ public class PlatoService {
                 plato.getDescripcion(),
                 plato.getPrecio(),
                 plato.getDisponible(),
-                plato.getCreadoEn()
+                plato.getCreadoEn(),
+                plato.getStock()
         );
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = MenuQueryService.CACHE_MENU, allEntries = true)
+    public void ajustarStock(Long platoId, int delta) {
+        platoRepository.findById(platoId).ifPresent(p -> {
+            if (p.getStock() == null) return;          // sin control de stock
+            int nuevo = Math.max(0, p.getStock() + delta);
+            p.setStock(nuevo);
+            p.setDisponible(nuevo > 0);
+        });
     }
 }

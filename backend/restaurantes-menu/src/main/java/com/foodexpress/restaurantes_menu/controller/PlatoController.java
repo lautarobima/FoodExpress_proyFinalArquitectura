@@ -3,6 +3,7 @@ package com.foodexpress.restaurantes_menu.controller;
 
 import java.util.List;
 
+import com.foodexpress.restaurantes_menu.service.MenuAdminService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -26,9 +27,11 @@ import jakarta.validation.Valid;
 public class PlatoController {
 
     private final PlatoService platoService;
+    private final MenuAdminService menuAdminService;
 
-    public PlatoController(PlatoService platoService) {
+    public PlatoController(PlatoService platoService, MenuAdminService menuAdminService) {
         this.platoService = platoService;
+        this.menuAdminService = menuAdminService;
     }
 
     // Registrar un plato
@@ -37,7 +40,7 @@ public class PlatoController {
     public PlatoResponseDTO crear(
             @Valid @RequestBody PlatoRequestDTO dto
     ) {
-        return platoService.crear(dto);
+        return menuAdminService.crear(dto);
     }
 
     // Consultar los platos de una categoría
@@ -62,7 +65,7 @@ public class PlatoController {
             @PathVariable Long id,
             @Valid @RequestBody PlatoRequestDTO dto
     ) {
-        return platoService.actualizar(id, dto);
+        return menuAdminService.actualizar(id, dto);
     }
 
     // Cambiar disponibilidad de un plato
@@ -71,6 +74,6 @@ public class PlatoController {
             @PathVariable Long id,
             @RequestParam Boolean disponible
     ) {
-        return platoService.cambiarDisponibilidad(id, disponible);
+        return menuAdminService.cambiarDisponibilidad(id, disponible);
     }
 }

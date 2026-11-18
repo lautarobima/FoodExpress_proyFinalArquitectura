@@ -14,6 +14,7 @@ public class PlatoResponseDTO {
     private BigDecimal precio;
     private Boolean disponible;
     private LocalDateTime creadoEn;
+    private Integer stock;
 
     public PlatoResponseDTO(
             Long id,
@@ -23,7 +24,8 @@ public class PlatoResponseDTO {
             String descripcion,
             BigDecimal precio,
             Boolean disponible,
-            LocalDateTime creadoEn) {
+            LocalDateTime creadoEn,
+            Integer stock) {
 
         this.id = id;
         this.categoriaId = categoriaId;
@@ -33,6 +35,7 @@ public class PlatoResponseDTO {
         this.precio = precio;
         this.disponible = disponible;
         this.creadoEn = creadoEn;
+        this.stock = stock;
     }
 
     public Long getId() {
@@ -65,5 +68,9 @@ public class PlatoResponseDTO {
 
     public LocalDateTime getCreadoEn() {
         return creadoEn;
+    }
+
+    public Integer getStock() {
+        return stock;
     }
 }
