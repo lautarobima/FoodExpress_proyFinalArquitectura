@@ -2,6 +2,7 @@
 # Uso: cp .env.example .env && docker compose up --build
 #
 # Puertos expuestos al host:
+#   3000  frontend           (la web: http://localhost:3000)
 #   8081  restaurantes-menu  (API, la consume el frontend)
 #   8082  pedidos            (API, la consume el frontend)
 #   8083  notificaciones     (API + WebSocket /ws para tiempo real)
@@ -127,6 +128,7 @@ services:
     networks:
       - datos
       - mensajeria
+      - servicios
     depends_on:
       postgres:
         condition: service_healthy
@@ -138,6 +140,22 @@ services:
       timeout: 5s
       retries: 10
       start_period: 40s
+
+  frontend:
+    build: ./frontend
+    container_name: foodexpress-frontend
+    ports:
+      - "3000:80"
+    networks:
+      - servicios
+    # nginx resuelve los nombres de los servicios al arrancar: deben estar sanos antes
+    depends_on:
+      restaurantes-menu:
+        condition: service_healthy
+      pedidos:
+        condition: service_healthy
+      notificaciones:
+        condition: service_healthy
 
 networks:
   datos:        # servicios <-> PostgreSQL
