@@ -1,15 +1,19 @@
 # FoodExpress: sistema completo
 # Uso: cp .env.example .env && docker compose up --build
 #
-# Puertos expuestos al host:
-#   3000  frontend           (la web: http://localhost:3000)
-#   8081  restaurantes-menu  (API, la consume el frontend)
-#   8082  pedidos            (API, la consume el frontend)
-#   8083  notificaciones     (API + WebSocket /ws para tiempo real)
-#   5432  postgres           (acceso desde DBeaver/IntelliJ en desarrollo)
-#   5672  rabbitmq AMQP      (correr un servicio desde el IDE contra el broker)
-#   15672 rabbitmq panel     (monitoreo de colas)
-
+# Puertos publicados al host (justificación: docs/adr/ADR-018-puertos-expuestos.md):
+#   3000   frontend           (la web: http://localhost:3000)
+#   8081   restaurantes-menu  (API: pruebas con Postman y /actuator/health)
+#   8082   pedidos            (API: pruebas con Postman y /actuator/health)
+#   8083   notificaciones     (API + WebSocket /ws + panel.html)
+#   127.0.0.1:5432   postgres        (solo local: DBeaver/IntelliJ en desarrollo)
+#   127.0.0.1:5672   rabbitmq AMQP   (solo local: correr un servicio desde el IDE)
+#   127.0.0.1:15672  rabbitmq panel  (solo local: monitoreo de colas y DLQ)
+#
+# Redes (justificación: docs/adr/ADR-017-redes-docker-compose.md):
+#   datos       servicios <-> PostgreSQL
+#   mensajeria  servicios <-> RabbitMQ
+#   servicios   HTTP entre contenedores (nginx -> servicios, pedidos -> restaurantes-menu)
 services:
 
   postgres:
@@ -19,7 +23,7 @@ services:
       POSTGRES_USER: ${DB_USER:?Falta DB_USER en .env}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en .env}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       # Crea las 3 bases de datos la primera vez que arranca
@@ -39,8 +43,8 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?Falta RABBITMQ_USER en .env}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Falta RABBITMQ_PASSWORD en .env}
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     networks:
@@ -156,6 +160,12 @@ services:
         condition: service_healthy
       notificaciones:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s    
 
 networks:
   datos:        # servicios <-> PostgreSQL

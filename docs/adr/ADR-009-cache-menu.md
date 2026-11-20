@@ -1,26 +1,24 @@
-# ADR-009: Uso de caché para las consultas del menú
+# ADR-009: Caché del menú con Spring Cache
 
-- **Fecha:** 2026-11-18
-- **Estado:** Propuesto
+- **Fecha de la decisión:** 2026-11-15
+- **Estado:** Aceptado
+- **Evidencia:** commit `cb08de8` (`@EnableCaching`, `@Cacheable` en `MenuService.consultarMenuCompleto`, `@CacheEvict` en los servicios de escritura)
+- **Registrado en el repositorio:** 2026-11-19
 
 ## Contexto
-
-El menú de los restaurantes puede consultarse repetidamente desde el frontend y desde el microservicio Pedidos. Consultar y construir toda la información en cada solicitud puede incrementar el trabajo realizado por el servicio.
+El menú completo se consulta desde el frontend y desde Pedidos en cada orden, y armarlo implica varias consultas (restaurante, categorías, platos, extras). El catálogo pide que responda rápido en horas pico.
 
 ## Decisión
+`consultarMenuCompleto` usa `@Cacheable` (clave: id del restaurante) y toda operación que cambie restaurantes, categorías, platos, extras, asociaciones o stock usa `@CacheEvict(allEntries = true)`.
 
-Se decidió implementar caché para la consulta del menú completo mediante las capacidades de caché de Spring.
-
-Las operaciones que modifican restaurantes, categorías, platos, extras o sus asociaciones deben invalidar la información almacenada en caché.
-
-## Alternativas consideradas
-
-- Consultar y construir el menú en cada solicitud.
-- Almacenar temporalmente el resultado de las consultas y actualizarlo cuando cambien los datos.
+## Opciones evaluadas
+- **A. Sin caché:** siempre fresco, pero repite consultas en cada orden.
+- **B. Caché local de Spring (elegida):** una anotación, sin infraestructura extra.
+- **C. Redis:** compartido entre réplicas y con expiración, pero agrega otro contenedor para un solo servicio.
 
 ## Consecuencias
-
-- Se reducen consultas y procesamiento repetido para solicitudes frecuentes.
-- Se mejora el rendimiento potencial de las consultas del menú.
-- Se requiere invalidar la caché después de modificaciones.
-- Una invalidación incorrecta puede mostrar información desactualizada.
+- (+) Las lecturas repetidas no tocan la base (prueba CAL-06).
+- (+) Cualquier cambio invalida el menú, incluido el ajuste de stock por eventos (CAL-07).
+- (−) La caché vive en memoria de cada instancia: con varias réplicas habría menús distintos. Redis sería el siguiente paso.
+- (−) `allEntries = true` borra el menú de todos los restaurantes ante un cambio en uno; es simple pero poco fino.
+- (−) No hay expiración por tiempo.

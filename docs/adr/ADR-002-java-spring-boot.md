@@ -1,26 +1,25 @@
-# ADR-002: Uso de Java 21 y Spring Boot
+# ADR-002: Java 21, Spring Boot y Maven como base tecnológica
 
-- **Fecha:** 2026-11-18
-- **Estado:** Propuesto
+- **Fecha de la decisión:** 2026-11-14
+- **Estado:** Aceptado
+- **Evidencia:** commit `e470f58` (`pom.xml` de los tres servicios con `java.version=21` y `spring-boot-starter-parent` 4.1.2)
+- **Registrado en el repositorio:** 2026-11-19
 
 ## Contexto
-
-Los microservicios necesitan una tecnología que facilite la construcción de APIs REST, la persistencia de datos, la validación de solicitudes y la integración con RabbitMQ.
+Necesitamos construir APIs REST, persistencia relacional, validación, mensajería AMQP, WebSocket y health checks en tres servicios, aplicando patrones GoF y principios SOLID, que es el foco del curso.
 
 ## Decisión
+Usamos Java 21 (LTS) con Spring Boot 4.1.2 y Maven (con `mvnw` incluido) en los tres microservicios.
 
-Se decidió utilizar Java 21 y Spring Boot para implementar los tres microservicios del sistema.
-
-Se utilizan dependencias de Spring para persistencia, validación, comunicación HTTP, mensajería y monitoreo, según las responsabilidades de cada servicio.
-
-## Alternativas consideradas
-
-- Implementar los servicios con otro lenguaje y framework.
-- Utilizar Java con Spring Boot para aprovechar su ecosistema de desarrollo empresarial.
+## Opciones evaluadas
+- **A. Java + Spring Boot (elegida):** starters para JPA, AMQP, WebSocket, cache y actuator; inyección de dependencias que facilita DIP; el equipo ya conoce Java del curso.
+- **B. Node.js + NestJS:** buen ecosistema para APIs, pero el curso evalúa patrones de diseño en Java y el equipo tiene menos experiencia.
+- **C. Quarkus/Micronaut:** arranque más rápido, pero menos documentación y experiencia previa en el equipo.
+- **Versión de Java:** se eligió 21 sobre 17 por ser la LTS vigente y coincidir con las imágenes `eclipse-temurin:21` usadas en Docker.
+- **Maven vs Gradle:** se eligió Maven por su convención más simple y porque el wrapper permite compilar sin instalarlo.
 
 ## Consecuencias
-
-- Se facilita la implementación de APIs REST y la inyección de dependencias.
-- Se dispone de integración con PostgreSQL y RabbitMQ.
-- Los tres servicios mantienen una base tecnológica común.
-- El equipo debe gestionar las dependencias y configuraciones propias de Spring Boot.
+- (+) Base común en los tres servicios y mucho soporte del framework.
+- (+) Sin necesidad de instalar Maven localmente (`./mvnw`).
+- (−) Spring Boot 4 es una versión mayor reciente: muchos ejemplos en línea corresponden a versiones anteriores.
+- (−) Imágenes y consumo de memoria mayores que otras opciones más ligeras.

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.seed_restaurantes.sql
 
 # Java y Maven
 **/target/

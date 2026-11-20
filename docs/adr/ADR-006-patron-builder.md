@@ -1,27 +1,24 @@
-# ADR-006: Uso del patrón Builder para construir pedidos
+# ADR-006: Patrón Builder para construir pedidos
 
-- **Fecha:** 2026-11-18
-- **Estado:** Propuesto
+- **Fecha de la decisión:** 2026-11-14
+- **Estado:** Aceptado
+- **Evidencia:** commit `e470f58` (`patterns/builder/PedidoBuilder.java`, usado en `PedidoService.crearPedido`)
+- **Registrado en el repositorio:** 2026-11-19
 
 ## Contexto
-
-Un pedido puede contener varios platos, cantidades, extras y notas especiales. Construir el objeto directamente mediante un constructor con muchos parámetros puede dificultar su lectura y mantenimiento.
+Un pedido tiene varios ítems, cada uno con cantidad, notas y extras opcionales, y las relaciones son bidireccionales (`Pedido` ↔ `ItemPedido` ↔ `ItemPedidoExtra`). Armarlo con setters sueltos facilita olvidar enlazar la relación inversa.
 
 ## Decisión
+`PedidoBuilder` arma el pedido paso a paso (`conCliente`, `conRestaurante`, `agregarItem`, `agregarExtra`, `conValores`) y `build()` entrega el objeto completo.
 
-Se decidió implementar el patrón Builder en el microservicio Pedidos.
-
-El Builder permite configurar progresivamente la información del pedido y sus elementos antes de construir el objeto final.
-
-## Alternativas consideradas
-
-- Utilizar constructores con numerosos parámetros.
-- Crear objetos mediante setters.
-- Utilizar el patrón Builder para organizar la construcción del pedido.
+## Opciones evaluadas
+- **A. Constructor con muchos parámetros:** ilegible con listas anidadas.
+- **B. Setters directos en el servicio:** flexible, pero repite el enlace entre pedido, ítem y extra, y permite objetos a medio construir.
+- **C. Builder GoF (elegida):** encapsula el armado y los enlaces; el catálogo lo sugiere para este dominio.
+- **D. `@Builder` de Lombok:** menos código, pero no maneja el enlace bidireccional y añade una dependencia.
 
 ## Consecuencias
-
-- La construcción de pedidos resulta más organizada y legible.
-- Se facilita la incorporación de nuevos atributos.
-- La lógica de construcción queda separada de otras responsabilidades.
-- Se requiere mantener las validaciones necesarias antes de finalizar la construcción.
+- (+) `PedidoService` queda más legible y el enlace entre entidades no se olvida.
+- (+) Agregar un atributo nuevo no cambia las firmas existentes.
+- (−) `PedidoDirector` existe pero hoy no está en el flujo principal (el servicio usa el builder directamente); es candidato a eliminarse o a usarse en pruebas.
+- (−) Las validaciones siguen en el servicio, no en `build()`.

@@ -1,4 +1,5 @@
 # Estrategia de ramas y trabajo colaborativo con Git
+<<<<<<< HEAD
  
 ## 1. Estrategia utilizada
  
@@ -70,4 +71,3 @@ La coordinación y el reparto de tareas se hicieron por un grupo de WhatsApp. No
 ## 8. Evidencias
  
 Se anexan en el documento de entrega final las capturas del historial de commits, de las ramas del repositorio (*Insights → Network*) y del Pull Request #1.
- 

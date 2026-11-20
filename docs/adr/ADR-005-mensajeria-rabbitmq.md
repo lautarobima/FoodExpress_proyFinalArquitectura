@@ -1,32 +1,24 @@
 # ADR-005: Mensajería asíncrona con RabbitMQ
 
-- **Fecha:** 2026-11-18
-- **Estado:** Propuesto
+- **Fecha de la decisión:** 2026-11-15
+- **Estado:** Aceptado
+- **Evidencia:** commit `cb08de8` ("Agregado RabbitMQ": `RabbitConfig`, `PedidoEventosPublisher`, listeners)
+- **Registrado en el repositorio:** 2026-11-19
 
 ## Contexto
-
-Después de crear, actualizar o cancelar un pedido, otros microservicios necesitan reaccionar a estos cambios. La comunicación directa entre todos los servicios generaría mayor dependencia y dificultaría la disponibilidad.
+Al crear, avanzar o cancelar un pedido, otros servicios deben reaccionar: Notificaciones avisa al cliente y al restaurante, y Restaurantes y Menú ajusta el stock. Pedidos no debe esperar ni depender de que ellos estén disponibles.
 
 ## Decisión
+Pedidos publica `pedido.creado`, `pedido.estado.cambiado` y `pedido.cancelado` en un exchange topic (`foodexpress.pedidos`). Cada consumidor declara sus propias colas durables. En Notificaciones, un mensaje que falla 3 veces va a una cola de mensajes fallidos (DLQ). La publicación se hace con `@TransactionalEventListener(AFTER_COMMIT)`.
 
-Se decidió utilizar RabbitMQ para implementar comunicación asíncrona basada en eventos.
-
-El microservicio Pedidos publica los siguientes eventos:
-
-- `pedido.creado`
-- `pedido.estado.cambiado`
-- `pedido.cancelado`
-
-Los microservicios Restaurantes y Menú y Notificaciones consumen los eventos mediante sus propias colas.
-
-## Alternativas consideradas
-
-- Realizar llamadas REST directas entre todos los microservicios.
-- Utilizar mensajería asíncrona mediante RabbitMQ.
+## Opciones evaluadas
+- **A. Llamadas REST directas a cada servicio:** simple, pero Pedidos quedaría acoplado a que todos respondan.
+- **B. Apache Kafka:** muy escalable, pero excesivo para este volumen y más complejo de operar; el catálogo pide RabbitMQ.
+- **C. RabbitMQ (elegida):** exchanges y routing keys encajan con eventos por tipo; fácil de levantar en Docker con panel de administración.
 
 ## Consecuencias
-
-- Los consumidores pueden procesar los eventos de manera independiente.
-- Se reduce el acoplamiento entre los servicios.
-- Se permite procesar mensajes pendientes cuando un consumidor vuelve a estar disponible, si se conservan correctamente en el broker.
-- Se deben gestionar errores, reintentos, mensajes duplicados y colas de mensajes fallidos.
+- (+) Notificaciones puede estar caído: los mensajes esperan en la cola (pruebas CAL-10/CAL-11).
+- (+) `AFTER_COMMIT` evita anunciar pedidos que no se guardaron.
+- (−) Si RabbitMQ falla justo después del commit, el pedido queda creado pero el evento se pierde (solo se registra en log). Mejora futura: patrón Outbox.
+- (−) Los consumidores no son idempotentes: un mensaje duplicado podría descontar stock dos veces.
+- (−) El stock queda con consistencia eventual.

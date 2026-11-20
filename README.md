@@ -58,7 +58,21 @@ cd backend/pedidos
 export DB_PASSWORD=postgres
 ./mvnw spring-boot:run
 ```
+### Redes y puertos
 
+El Compose usa tres redes propias, no la red por defecto de Docker:
+
+| Red | Propósito | Miembros |
+|---|---|---|
+| `datos` | Servicios ↔ PostgreSQL | postgres, los 3 microservicios |
+| `mensajeria` | Servicios ↔ RabbitMQ | rabbitmq, los 3 microservicios |
+| `servicios` | HTTP entre contenedores | frontend, los 3 microservicios |
+
+El frontend solo está en `servicios`: no puede llegar a la base de datos ni al broker. Detalle y alternativas en `docs/adr/ADR-017-redes-docker-compose.md`.
+
+Puertos publicados: 3000 (web) y 8081–8083 (APIs, para pruebas). Los puertos 5432 (PostgreSQL), 5672 y 15672 (RabbitMQ) se publican **solo en `127.0.0.1`**, para inspeccionar datos y depurar desde el IDE sin abrirlos a la red. Justificación en `docs/adr/ADR-018-puertos-expuestos.md`.
+
+La arquitectura, las decisiones y el proceso están en `docs/` (ADR en `docs/adr/`, Git en `docs/git/`, pruebas en `docs/pruebas/`, lecciones aprendidas en `docs/proceso/`).
 ## Documentación
 
 - `docs/arquitectura/api.md`: endpoints de los 3 microservicios.

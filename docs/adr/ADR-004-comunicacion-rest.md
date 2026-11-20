@@ -1,27 +1,23 @@
-# ADR-004: Comunicación síncrona mediante API REST
+# ADR-004: Consulta síncrona del menú mediante REST (puerto `MenuPort`)
 
-- **Fecha:** 2026-11-18
-- **Estado:** Propuesto
+- **Fecha de la decisión:** 2026-11-14
+- **Estado:** Aceptado
+- **Evidencia:** commit `e470f58` (`MenuClient`, `MenuPort`, `MenuService` en Pedidos)
+- **Registrado en el repositorio:** 2026-11-19
 
 ## Contexto
-
-Al crear un pedido, el microservicio Pedidos necesita verificar que el restaurante exista, esté abierto y que los platos y extras seleccionados estén disponibles. También necesita consultar sus precios.
+Al crear un pedido, Pedidos debe verificar que el restaurante esté abierto y que los platos y extras estén disponibles, y debe tomar los precios del servidor (no del cliente). El catálogo exige que un plato no disponible no pueda pedirse "en el momento de la orden".
 
 ## Decisión
+Pedidos consulta el menú a Restaurantes y Menú por HTTP/REST (`RestClient`) a través de la interfaz `MenuPort`, implementada por `MenuClient`.
 
-Se decidió implementar comunicación síncrona mediante HTTP y API REST entre Pedidos y Restaurantes y Menú.
-
-Pedidos utiliza una abstracción `MenuPort` y una implementación HTTP `MenuClient` para consultar la información del menú.
-
-## Alternativas consideradas
-
-- Consultar directamente la base de datos de Restaurantes y Menú.
-- Replicar toda la información del menú en Pedidos.
-- Consultar el menú mediante una API REST.
+## Opciones evaluadas
+- **A. Leer directamente la base de Restaurantes:** dato siempre fresco, pero rompe el aislamiento de datos del ADR-003.
+- **B. Replicar el menú en Pedidos mediante eventos:** no depende de Menú en línea, pero el precio o la disponibilidad podrían estar desactualizados al validar.
+- **C. Consulta REST síncrona (elegida):** dato vigente y aislamiento de bases.
 
 ## Consecuencias
-
-- Pedidos obtiene información actualizada para validar las solicitudes.
-- Se mantiene la independencia de las bases de datos.
-- La creación de pedidos depende de la disponibilidad del servicio de menú durante la validación.
-- Se requiere gestionar errores de comunicación y respuestas HTTP inesperadas.
+- (+) Validación con información actual y precios tomados del servidor, no del cliente (se verifica con la prueba CAL-05, pendiente de ejecutar).
+- (+) `MenuPort` aplica DIP: se puede sustituir por un mock en pruebas.
+- (−) Si Restaurantes y Menú no responde, no se pueden crear pedidos. El sistema falla de forma segura: no registra pedidos sin validar (pruebas INT-02/CAL-13).
+- (−) Acoplamiento temporal entre servicios. Mejora futura: timeouts más finos y circuit breaker (hoy solo hay `connection-timeout=2s`).

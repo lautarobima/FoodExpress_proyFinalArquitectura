@@ -1,26 +1,22 @@
-# ADR-008: Uso del patrón Adapter para los canales de notificación
+# ADR-008: Patrón Adapter para los canales de notificación
 
-- **Fecha:** 2026-11-18
-- **Estado:** Propuesto
+- **Fecha de la decisión:** 2026-11-15
+- **Estado:** Aceptado
+- **Evidencia:** commit `cb08de8` (`adapter/CanalNotificacion.java`, `EmailCanalAdapter`, `PushCanalAdapter`, `WebSocketCanalAdapter`)
+- **Registrado en el repositorio:** 2026-11-19
 
 ## Contexto
-
-El microservicio Notificaciones necesita comunicarse mediante diferentes canales, como correo electrónico y WebSocket. Cada canal puede tener una interfaz y una forma de funcionamiento diferente.
+Cada canal tiene una API distinta: el servicio de correo expone `sendMail(to, subject, htmlBody)`, el de push `push(deviceToken, payload)` y WebSocket usa `SimpMessagingTemplate`. `NotificacionService` no debe conocer esos detalles.
 
 ## Decisión
+Definimos la interfaz `CanalNotificacion` (`tipo()`, `enviar(MensajeNotificacion)`) y un adaptador por canal. Spring inyecta todos los adaptadores y `NotificacionService` los guarda en un mapa por `TipoCanal`.
 
-Se decidió utilizar el patrón Adapter para unificar la interacción con los canales de notificación mediante una abstracción común, como `CanalNotificacion`.
-
-Cada implementación adapta el mecanismo específico de su canal a la interfaz utilizada por el servicio.
-
-## Alternativas consideradas
-
-- Implementar directamente la lógica de cada canal dentro del servicio principal.
-- Utilizar una interfaz común y adaptadores para los distintos canales.
+## Opciones evaluadas
+- **A. Lógica de cada canal dentro de `NotificacionService`:** el servicio crece y cambia con cada proveedor.
+- **B. Strategy sin adaptar APIs externas:** sirve para variar algoritmos, pero no resuelve que las interfaces de los proveedores sean incompatibles.
+- **C. Adapter (elegida):** adapta cada API existente a la interfaz común.
 
 ## Consecuencias
-
-- Se desacopla la lógica principal de las implementaciones específicas.
-- Se facilita incorporar nuevos canales de notificación.
-- Los canales pueden evolucionar de forma independiente.
-- Cada adaptador debe respetar el contrato definido por la interfaz común.
+- (+) Un canal nuevo (SMS, WhatsApp) es una clase nueva, sin modificar el servicio (OCP).
+- (+) Los fallos se registran por notificación (`EstadoEnvio.FALLIDA` y `detalleError`).
+- (−) Correo y push son simulados (`ServicioCorreoSimulado`, `ServicioPushSimulado`); un proveedor real exigiría credenciales y manejo de errores propio.
